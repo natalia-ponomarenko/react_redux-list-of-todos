@@ -1,32 +1,29 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import React, { useEffect, useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { getUser } from '../../api';
-import { Todo } from '../../types/Todo';
 import { User } from '../../types/User';
 import { Loader } from '../Loader';
+import { useAppSelector } from '../../app/hooks';
+import { actions as todoAction } from '../../features/currentTodo';
 
-type Props = {
-  selectedTodo: Todo,
-  closeModal: () => void,
-};
-
-export const TodoModal: React.FC<Props> = (
-  {
-    selectedTodo,
-    closeModal,
-  },
-) => {
+export const TodoModal: React.FC = () => {
   const [user, setUser] = useState<User>();
+  const selectedTodo = useAppSelector(state => state.currentTodo);
+  const dispatch = useDispatch();
 
   useEffect(() => {
-    getUser(selectedTodo.userId)
-      .then(selectedUser => setUser(selectedUser));
+    if (selectedTodo) {
+      getUser(selectedTodo.userId)
+        .then(selectedUser => setUser(selectedUser));
+    }
   }, []);
 
   const {
     id,
     title,
     completed,
-  } = selectedTodo;
+  } = selectedTodo!;
 
   return (
     <div className="modal is-active" data-cy="modal">
@@ -49,7 +46,7 @@ export const TodoModal: React.FC<Props> = (
               type="button"
               className="delete"
               data-cy="modal-close"
-              onClick={closeModal}
+              onClick={() => dispatch(todoAction.removeTodo())}
             />
           </header>
 
@@ -66,10 +63,14 @@ export const TodoModal: React.FC<Props> = (
               )}
 
               {' by '}
+              {user ? (
+                <a href={`mailto:${user.email}`}>
+                  {user.name}
+                </a>
+              ) : (
+                <p>User was not fetched</p>
+              )}
 
-              <a href={`mailto:${user.email}`}>
-                {user.name}
-              </a>
             </p>
           </div>
         </div>

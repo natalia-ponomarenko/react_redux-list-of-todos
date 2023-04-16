@@ -1,20 +1,28 @@
+import { useDispatch } from 'react-redux';
+import { useAppSelector } from '../../app/hooks';
+import { actions as FilterActions } from '../../features/filter';
 import { Status } from '../../types/Status';
 
-type Props = {
-  query: string;
-  setQuery: React.Dispatch<React.SetStateAction<string>>;
-  filter: string;
-  setFilter: React.Dispatch<React.SetStateAction<Status>>;
-};
+export const TodoFilter: React.FC = (
+) => {
+  const dispatch = useDispatch();
+  const query = useAppSelector(state => state.filter.query);
+  const status = useAppSelector(state => state.filter.status);
 
-export const TodoFilter: React.FC<Props> = ({
-  query,
-  setQuery,
-  filter,
-  setFilter,
-}) => {
-  const clearQuery = () => {
-    setQuery('');
+  const handleSelectChange = (value: Status) => {
+    switch (value) {
+      case Status.ALL:
+        dispatch(FilterActions.filterAll(value, query));
+        break;
+      case Status.COMPLETED:
+        dispatch(FilterActions.filterCompleted(value, query));
+        break;
+      case Status.ACTIVE:
+        dispatch(FilterActions.filterActive(value, query));
+        break;
+      default:
+        dispatch(FilterActions.filterAll(value, query));
+    }
   };
 
   return (
@@ -24,12 +32,12 @@ export const TodoFilter: React.FC<Props> = ({
           <select
             data-cy="statusSelect"
             name="filter"
-            onChange={(e) => setFilter(e.target.value as Status)}
-            value={filter}
+            onChange={(e) => handleSelectChange(e.target.value as Status)}
+            value={status}
           >
-            <option value="all">All</option>
-            <option value="active">Active</option>
-            <option value="completed">Completed</option>
+            <option value={Status.ALL}>All</option>
+            <option value={Status.ACTIVE}>Active</option>
+            <option value={Status.COMPLETED}>Completed</option>
           </select>
         </span>
       </p>
@@ -42,7 +50,9 @@ export const TodoFilter: React.FC<Props> = ({
           className="input"
           placeholder="Search..."
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => dispatch(
+            FilterActions.filterAll(status, e.target.value),
+          )}
         />
         <span className="icon is-left">
           <i className="fas fa-magnifying-glass" />
@@ -55,7 +65,7 @@ export const TodoFilter: React.FC<Props> = ({
               data-cy="clearSearchButton"
               type="button"
               className="delete"
-              onClick={() => clearQuery()}
+              onClick={() => dispatch(FilterActions.filterAll(Status.ALL, ''))}
             />
           </span>
         )}

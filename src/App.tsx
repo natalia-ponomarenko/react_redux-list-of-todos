@@ -1,57 +1,31 @@
-/* eslint-disable max-len */
-import React, { useState, useEffect } from 'react';
-import { Todo } from './types/Todo';
+import React, { useEffect } from 'react';
 import 'bulma/css/bulma.css';
 import '@fortawesome/fontawesome-free/css/all.css';
+import { useDispatch } from 'react-redux';
 import { TodoList } from './components/TodoList';
 import { TodoFilter } from './components/TodoFilter';
 import { getTodos } from './api';
 import { TodoModal } from './components/TodoModal';
 import { Loader } from './components/Loader';
-import { Status } from './types/Status';
-
-const filterTodos = (todos: Todo[], query: string, filter: Status) => {
-  let filteredTodos = [...todos];
-  const lowerCasedQuery = query.toLowerCase();
-
-  if (query) {
-    filteredTodos = filteredTodos.filter(
-      (todo) => todo.title.toLowerCase().includes(lowerCasedQuery),
-    );
-  }
-
-  switch (filter) {
-    case 'all':
-      return filteredTodos;
-    case 'active':
-      return filteredTodos.filter((todo) => !todo.completed);
-    case 'completed':
-      return filteredTodos.filter((todo) => todo.completed);
-    default:
-      return filteredTodos;
-  }
-};
+import { useAppSelector } from './app/hooks';
+import { actions as todosActions } from './features/todos';
+import { filterTodos } from './utils/helpers';
 
 export const App: React.FC = () => {
-  const [todos, setTodos] = useState<Todo[]>([]);
-  const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState<Status>('all');
-  const [selectedTodo, setSelectedTodo] = useState<Todo>();
-  const [selectedTodoId, setSelectedTodoId] = useState(0);
-
-  const visibleTodos = filterTodos(todos, query, filter);
+  const selectedTodo = useAppSelector(state => state.currentTodo);
+  const todos = useAppSelector(state => state.todos);
+  const query = useAppSelector(state => state.filter.query);
+  const status = useAppSelector(state => state.filter.status);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     getTodos()
-      .then((data) => setTodos(data));
+      .then(
+        (data) => dispatch(todosActions.addTodos(data)),
+      );
   }, []);
 
-  const findSelectedTodo = (id: number): void => {
-    const foundTodo = visibleTodos.find(todo => id === todo.id);
-
-    setSelectedTodoId(id);
-    setSelectedTodo(foundTodo);
-  };
+  const visibleTodos = filterTodos(todos, query, status);
 
   return (
     <>
@@ -61,20 +35,13 @@ export const App: React.FC = () => {
             <h1 className="title">Todos:</h1>
 
             <div className="block">
-              <TodoFilter
-                query={query}
-                setQuery={setQuery}
-                filter={filter}
-                setFilter={setFilter}
-              />
+              <TodoFilter />
             </div>
 
             <div className="block">
               {todos.length > 0 ? (
                 <TodoList
                   todos={visibleTodos}
-                  selectTodo={findSelectedTodo}
-                  selectedTodoId={selectedTodoId}
                 />
               ) : (
                 <Loader />
@@ -83,11 +50,8 @@ export const App: React.FC = () => {
           </div>
         </div>
       </div>
-      {selectedTodo && selectedTodoId !== 0 && (
-        <TodoModal
-          selectedTodo={selectedTodo}
-          closeModal={() => setSelectedTodoId(0)}
-        />
+      {selectedTodo && (
+        <TodoModal />
       ) }
     </>
   );
